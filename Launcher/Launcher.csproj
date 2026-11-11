@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets/Flow.ico</ApplicationIcon>
+    <AssemblyName>FLOW Launcher</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets/Sleeping.png" />
+    <Resource Include="Assets/Flow.ico" />
+    <ProjectReference Include="../Core/Core.csproj" />
+  </ItemGroup>
+</Project>
+
+
