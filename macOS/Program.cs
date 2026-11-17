@@ -50,6 +50,8 @@ namespace Flow.Launcher
         public static async Task<string> PrepareAsync(string root)
         {
             if (java is not null) return java;
+            var bundled = Path.Combine(AppContext.BaseDirectory, "java", "Contents", "Home", "bin", "java");
+            if (File.Exists(bundled)) return java = bundled;
             var start = new ProcessStartInfo("/usr/libexec/java_home")
             {
                 UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true

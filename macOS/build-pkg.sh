@@ -11,6 +11,23 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$stage/scripts"
 for arch in arm64 x64; do
   dotnet publish FlowMac.csproj -c Release -r "osx-$arch" --self-contained true -o "$app/Contents/Resources/osx-$arch"
   chmod +x "$app/Contents/Resources/osx-$arch/flow-mac"
+  java_arch="$arch"
+  if [ "$arch" = arm64 ]; then java_arch=aarch64; fi
+  curl --fail --silent --show-error --retry 3 --proto '=https' \
+    "https://api.adoptium.net/v3/assets/latest/17/hotspot?architecture=$java_arch&image_type=jre&os=mac&vendor=eclipse" \
+    -o "$stage/java.json"
+  url="$(jq -er '.[0].binary.package.link | select(startswith("https://github.com/adoptium/temurin17-binaries/releases/download/"))' "$stage/java.json")"
+  hash="$(jq -er '.[0].binary.package.checksum | select(test("^[a-fA-F0-9]{64}$"))' "$stage/java.json")"
+  curl --fail --silent --show-error --location --retry 3 --proto '=https' --proto-redir '=https' \
+    "$url" -o "$stage/java.tar.gz"
+  printf '%s  %s\n' "$hash" "$stage/java.tar.gz" | shasum -a 256 -c -
+  runtime="$app/Contents/Resources/osx-$arch/java"
+  mkdir -p "$runtime"
+  tar -xzf "$stage/java.tar.gz" -C "$runtime" --strip-components 1
+  test -x "$runtime/Contents/Home/bin/java"
+  if [ "$(uname -m)" = "$arch" ] || { [ "$arch" = x64 ] && [ "$(uname -m)" = x86_64 ]; }; then
+    "$runtime/Contents/Home/bin/java" -version
+  fi
 done
 for arch in arm64 x86_64; do
   xcrun swiftc Launcher.swift -target "$arch-apple-macos13.0" -o "$stage/flow-$arch"
