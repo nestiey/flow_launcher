@@ -1,0 +1,30 @@
+name: FLOW macOS Installer Test
+on:
+  push:
+    branches: [flow-macos-package-test]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+      - name: Build universal package
+        run: bash macOS/build-pkg.sh
+      - name: Inspect installer and universal executable
+        run: |
+          pkgutil --expand-full macOS/package/FLOW-Launcher-macOS.pkg "$RUNNER_TEMP/flow-expanded"
+          app=$(find "$RUNNER_TEMP/flow-expanded" -type d -name 'FLOW Launcher.app' -print -quit)
+          test -n "$app"
+          lipo -verify_arch arm64 x86_64 "$app/Contents/MacOS/FLOW Launcher"
+          test -x "$app/Contents/Resources/osx-arm64/flow-mac"
+          test -x "$app/Contents/Resources/osx-x64/flow-mac"
+          plutil -lint "$app/Contents/Info.plist"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FLOW-macOS-installer-test
+          path: macOS/package/FLOW-Launcher-macOS.pkg
+          if-no-files-found: error
